@@ -5,7 +5,7 @@
 #include<stdint.h>
 
 
-
+char payload[7800];
 
 struct mod{
     uint16_t index;
@@ -30,14 +30,22 @@ int main(){
     strcpy(modbus[1].result,"230.2");
 
     memset(command,0,sizeof(command));
-    strcpy(command,"$IMEI,ADD,2,2,400001,4,float,ABCD,voltage;");
+    strcpy(command,"$IMEI,ADD,2,5,400001,4,float,ABCD,voltage;");
     commandToStruct(command);
     strcpy(modbus[2].result,"234.0");
 
-//    printStruct(1);        //printing the specified index structure
-//    printStruct(2);
+    memset(command,0,sizeof(command));
+    strcpy(command,"$IMEI,ADD,299,9,400001,4,float,ABCD,voltage;");
+    commandToStruct(command);
+    strcpy(modbus[299].result,"234.0");
 
-    structToPayload();
+//    printStruct(1);        //printing the specified index structure
+    //printStruct(2);
+
+    structToPayload();          //CONVERTING STRUCTURE TO PAYLOAD
+
+
+    printf("\n%s",payload);
 
 }
 
@@ -80,8 +88,40 @@ void printStruct(uint16_t index){
 //CREATING PAYLOAD
 void structToPayload(){
 
-    char payload[7800];
+    uint16_t payloadIndex=0;
+    uint16_t structIndex=0;
+    char tempSlaveID[4];
+
     memset(payload,0,sizeof(payload));
+
+    strcpy(payload,"[");
+
+    for(structIndex=1;structIndex<300;structIndex++){
+
+        if(modbus[structIndex].index!=0){               //IF MODEBUS ARRAY HAS DATA
+
+            strcpy(payload+strlen(payload),"{");
+            strcpy(payload+strlen(payload),"\"");
+            strcpy(payload+strlen(payload),modbus[structIndex].Alias_Name);
+            strcpy(payload+strlen(payload),"\"");
+            strcpy(payload+strlen(payload),":");
+            //strcpy(payload+strlen(payload),"\"");
+            strcpy(payload+strlen(payload),modbus[structIndex].result);
+            //strcpy(payload+strlen(payload),"\"");
+            strcpy(payload+strlen(payload),",");
+            strcpy(payload+strlen(payload),"\"slaveID\":");
+            memset(tempSlaveID,0,4);
+            sprintf(tempSlaveID,"%d",modbus[structIndex].slave_id);
+            strcpy(payload+strlen(payload),tempSlaveID);
+            strcpy(payload+strlen(payload),"},");
+
+        }
+
+    }
+
+    strcpy(payload+(strlen(payload)-1),"]");
+
+
 
 
 
