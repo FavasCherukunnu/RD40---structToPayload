@@ -1,3 +1,32 @@
+/*
+*   CONVERTING STRUCTURE TO PAYLOAD
+*
+*   In this program, converting command and storing to structure array that specified in command.
+*   Here there are two funciton used.
+*
+*   1- commandToStruct(char command[50]);
+*
+*       - passing the command. converting command and storing to structure array that specified in command.
+*
+*       @params     : command that come from server
+*       @return     : if index value in command is zero or greater than 299, return false. otherwise return true
+*
+*   2- printStruct(uint16_t index);
+*
+*       - print the structure array that specified.
+*
+*       @params     : index number of structure in structure array
+*
+*   3- structToPayload(void);
+*
+*       - Converting structure to payload. the payload variable and structure has declared glably, so we does not need any arguments to function
+*
+*       @return     : if modbus structure array has data, then return true. else return false
+*
+*/
+
+
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -21,13 +50,13 @@ struct mod{
 
 bool commandToStruct(char command[50]);
 void printStruct(uint16_t index);
-void structToPayload(void);
+bool structToPayload(void);
 
 int main(){
 
     char command[50] = "$IMEI,ADD,1,2,400001,4,float,ABCD,voltage;";
-    commandToStruct(command);
-    strcpy(modbus[1].result,"230.2");
+    commandToStruct(command);                             //CONVERTING COMMAND TO STRUCTURE AND STORING CORRESPONDING INDEX
+    strcpy(modbus[1].result,"230.2");               //READING INPUT AND STORING TO STRUCT
 
     memset(command,0,sizeof(command));
     strcpy(command,"$IMEI,ADD,2,5,400001,4,float,ABCD,voltage;");
@@ -39,13 +68,14 @@ int main(){
     commandToStruct(command);
     strcpy(modbus[299].result,"234.0");
 
-//    printStruct(1);        //printing the specified index structure
-    //printStruct(2);
-
-    structToPayload();          //CONVERTING STRUCTURE TO PAYLOAD
 
 
-    printf("\n%s",payload);
+    if(structToPayload()){                      //CONVERTING STRUCTURE TO PAYLOAD
+        printf("%s\n",payload);
+    }else{
+        printf("modbus structure has no data");
+    }
+
 
 }
 
@@ -86,11 +116,12 @@ void printStruct(uint16_t index){
 }
 
 //CREATING PAYLOAD
-void structToPayload(){
+bool structToPayload(){
 
     uint16_t payloadIndex=0;
     uint16_t structIndex=0;
     char tempSlaveID[4];
+    bool structEmpty = true;
 
     memset(payload,0,sizeof(payload));
 
@@ -100,6 +131,7 @@ void structToPayload(){
 
         if(modbus[structIndex].index!=0){               //IF MODEBUS ARRAY HAS DATA
 
+            structEmpty =false;
             strcpy(payload+strlen(payload),"{");
             strcpy(payload+strlen(payload),"\"");
             strcpy(payload+strlen(payload),modbus[structIndex].Alias_Name);
@@ -110,9 +142,11 @@ void structToPayload(){
             //strcpy(payload+strlen(payload),"\"");
             strcpy(payload+strlen(payload),",");
             strcpy(payload+strlen(payload),"\"slaveID\":");
+            //strcpy(payload+strlen(payload),"\"");
             memset(tempSlaveID,0,4);
             sprintf(tempSlaveID,"%d",modbus[structIndex].slave_id);
             strcpy(payload+strlen(payload),tempSlaveID);
+            //strcpy(payload+strlen(payload),"\"");
             strcpy(payload+strlen(payload),"},");
 
         }
@@ -121,9 +155,11 @@ void structToPayload(){
 
     strcpy(payload+(strlen(payload)-1),"]");
 
-
-
-
+    if(structEmpty){                             //CLEARING IF MODBUS ARRAY HAS NO DATA
+        memset(payload,0,sizeof(payload));
+        return false;
+    }
+    return true;
 
 }
 
