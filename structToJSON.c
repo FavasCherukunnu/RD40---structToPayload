@@ -93,15 +93,25 @@ int main(){
 bool commandToStruct(char command[50]){
 
     uint16_t index;
-    sscanf(command,"%*[^,]%*c%*[^,]%*c%hu%*[]",&index);           //READING INDEX NUMBER
 
-    if(index==0)
-        return false;                                           //INDEX DON,T ZERO
+    strtok(command,",");
+    strtok(0,",");
+    sscanf(strtok(0,","),"%hu",&index);         //READING INDEX NUMBER
+
+    if(index==0||index >=300)                                   //INDEX DON,T ZERO OR GREATERR THAN 299
+        return false;
 
     memset(&modbus[index],0,sizeof(modbus[index]));             //CLEARING STRUCT
 
     //STORING TO CORRESPONDING STRUCTURE ARRAY
-    sscanf(command,"%*[^,]%*c%*[^,]%*c%hu%*c%hu%*c%u%*c%hhu%*c%[^,]%*c%[^,]%*c%[^;]%*[]",&modbus[index].index,&modbus[index].slave_id,&modbus[index].register_address,&modbus[index].function_code,&modbus[index].data_type,&modbus[index].type_order,&modbus[index].Alias_Name);
+    modbus[index].index = index;
+    sscanf(strtok(0,","),"%hu",&modbus[index].slave_id);
+    sscanf(strtok(0,","),"%u",&modbus[index].register_address);
+    sscanf(strtok(0,","),"%hhu",&modbus[index].function_code);
+    sscanf(strtok(0,","),"%s",&modbus[index].data_type);
+    sscanf(strtok(0,","),"%s",&modbus[index].type_order);
+    sscanf(strtok(0,";"),"%s",&modbus[index].Alias_Name);
+
     return true;
 
 }
