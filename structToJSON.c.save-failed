@@ -64,19 +64,14 @@ int main(){
     strcpy(modbus[2].result,"234.0");
 
     memset(command,0,sizeof(command));
-    strcpy(command,"$IMEI,ADD,299,29,400001,4,float,ABCD,voltage;");
+    strcpy(command,"$IMEI,ADD,299,9,400001,4,float,ABCD,voltage;");
     commandToStruct(command);
     strcpy(modbus[299].result,"234.0");
 
 
 
     if(structToPayload()){                      //CONVERTING STRUCTURE TO PAYLOAD
-        printf("%s\n",payload);
-    }else{
-        printf("modbus structure has no data");
-    }
-    if(structToPayload()){                      //CONVERTING STRUCTURE TO PAYLOAD
-        printf("%s\n",payload);
+        printf("%s>>>\n",payload);
     }else{
         printf("modbus structure has no data");
     }
@@ -165,12 +160,12 @@ bool structToPayload(){
             strcpy(payload+payloadLenght,",");
             payloadLenght++;
             strcpy(payload+payloadLenght,"\"slaveID\":");
-            payloadLenght += strlen("\"slaveID\":");
+            payloadLenght += 10;
             //strcpy(payload+strlen(payload),"\"");
             memset(tempSlaveID,0,4);
             sprintf(tempSlaveID,"%hu",modbus[structIndex].slave_id);
             strcpy(payload+payloadLenght,tempSlaveID);
-            payloadLenght+= strlen(tempSlaveID);
+            payloadLenght++;
             //strcpy(payload+strlen(payload),"\"");
             strcpy(payload+payloadLenght,"},");
             payloadLenght = payloadLenght + 2;
@@ -178,8 +173,8 @@ bool structToPayload(){
 
     }
 
-    strcpy(payload+(payloadLenght-1),"]");
-    payloadLenght =0;
+    strcpy(payload+(strlen(payload)-1),"]");
+
     if(structEmpty){                             //CLEARING IF MODBUS ARRAY HAS NO DATA
         memset(payload,0,sizeof(payload));
         return false;
