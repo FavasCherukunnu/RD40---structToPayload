@@ -144,7 +144,7 @@ bool structToPayload(){
             strcpy(payload+strlen(payload),"\"slaveID\":");
             //strcpy(payload+strlen(payload),"\"");
             memset(tempSlaveID,0,4);
-            sprintf(tempSlaveID,"%d",modbus[structIndex].slave_id);
+            sprintf(tempSlaveID,"%hu",modbus[structIndex].slave_id);
             strcpy(payload+strlen(payload),tempSlaveID);
             //strcpy(payload+strlen(payload),"\"");
             strcpy(payload+strlen(payload),"},");
