@@ -1,22 +1,8 @@
-/*
+/**
 *   CONVERTING STRUCTURE TO PAYLOAD
 *
 *   In this program, converting command and storing to structure array that specified in command.
 *   Here there are two funciton used.
-*
-*   1- commandToStruct(char command[50]);
-*
-*       - passing the command. converting command and storing to structure array that specified in command.
-*
-*       @params     : command that come from server
-*       @return     : if index value in command is zero or greater than 299, return false. otherwise return true
-*
-*   2- printStruct(uint16_t index);
-*
-*       - print the structure array that specified.
-*
-*       @params     : index number of structure in structure array
-
 *
 */
 
@@ -51,17 +37,20 @@ bool structToPayload(void);
 int main(){
 
     char command[50] = "$IMEI,ADD,1,2,400001,4,float,ABCD,voltage;";
-    commandToStruct(command);                             //CONVERTING COMMAND TO STRUCTURE AND STORING CORRESPONDING INDEX
+    if(!commandToStruct(command))                             //CONVERTING COMMAND TO STRUCTURE AND STORING CORRESPONDING INDEX
+        printf("invalid command\n");
     strcpy(modbus[1].result,"230.2");               //READING INPUT AND STORING TO STRUCT
 
     memset(command,0,sizeof(command));
     strcpy(command,"$IMEI,ADD,2,5,400001,4,float,ABCD,voltage;");
-    commandToStruct(command);
+    if(!commandToStruct(command))                             //CONVERTING COMMAND TO STRUCTURE AND STORING CORRESPONDING INDEX
+        printf("invalid command\n");
     strcpy(modbus[2].result,"234.0");
 
     memset(command,0,sizeof(command));
-    strcpy(command,"$IMEI,ADD,299,29,400001,4,float,ABCD,voltage;");
-    commandToStruct(command);
+    strcpy(command,"$IMEI,ADD,299,255,400001,4,float,ABCD,voltage;");
+    if(!commandToStruct(command))                             //CONVERTING COMMAND TO STRUCTURE AND STORING CORRESPONDING INDEX
+        printf("invalid command\n");
     strcpy(modbus[299].result,"234.0");
 
 
@@ -95,33 +84,36 @@ int main(){
 *       @return     : if index value in command is zero or greater than 299, return false.
 *                     if command syntax is error, return false
 *                     if slave is greater than 255, return false
-*                     if register address greater than 499999999, return false
+*                     if length of values in command is greater than 10 except IMEI, return false
+*                     if register address greater than 4294967295, return false
 *                     if function code greater than 255, return false
 *                     else return true
 */
 
 bool commandToStruct(char *com){
-    char command[70];
+    char command[100];
     memset(command,0,70);
     strcpy(command,com);
+    command[sizeof(command)-1]=0;
     uint16_t index;
-    char buffer[15];
-    int count=0;
+    char buffer[12];
+    uint8_t count=0;
     uint8_t commaError=0;
+    bool IMEI=true;
 
 
     //CHEKING ERROR IN COMMAND
-    if(strlen(command)>69)return false;
     if(command[strlen(command)-1]!=';')
         return false;
     for(index=0;index<strlen(command);index++){
         commaError++;
         if(command[index]==','){
-            if(commaError==1) return false;
+            if(commaError==1||commaError>11&&(!IMEI)) return false;
             count++;
             commaError =0;
+            IMEI =false;
         }
-
+        if(commaError>11&&(!IMEI)) return false;
     }
     index =0;
     if(count!=8)return false;       //COUNTING COMMAS
@@ -129,7 +121,7 @@ bool commandToStruct(char *com){
 
     strtok(command,",");
     strtok(0,",");
-    memset(buffer,0,15);
+    memset(buffer,0,12);
     strcpy(buffer,strtok(0,","));
     if(!checkInteger(buffer,299)){memset(&modbus[index],0,sizeof(modbus[index]));return false;}     //ERROR DETETECTION
     sscanf(buffer,"%hu",&index);         //READING INDEX NUMBER
@@ -141,18 +133,21 @@ bool commandToStruct(char *com){
 
     //STORING TO CORRESPONDING STRUCTURE ARRAY
     modbus[index].index = index;
-    memset(buffer,0,15);
+    memset(buffer,0,12);
     strcpy(buffer,strtok(0,","));
+    buffer[11]=0;
     if(!checkInteger(buffer,255)){memset(&modbus[index],0,sizeof(modbus[index]));return false;}     //ERROR DETETECTION
     sscanf(buffer,"%hu",&modbus[index].slave_id);
 
-    memset(buffer,0,15);
+    memset(buffer,0,12);
     strcpy(buffer,strtok(0,","));
-    if(!checkInteger(buffer,499999999)){memset(&modbus[index],0,sizeof(modbus[index]));return false;}     //ERROR DETETECTION
+    buffer[11]=0;
+    if(!checkInteger(buffer,4294967295)){memset(&modbus[index],0,sizeof(modbus[index]));return false;}     //ERROR DETETECTION
     sscanf(buffer,"%u",&modbus[index].register_address);
 
-    memset(buffer,0,15);
+    memset(buffer,0,12);
     strcpy(buffer,strtok(0,","));
+    buffer[11]=0;
     if(!checkInteger(buffer,255)){memset(&modbus[index],0,sizeof(modbus[index]));return false;}     //ERROR DETETECTION
     sscanf(buffer,"%hhu",&modbus[index].function_code);
 
@@ -165,6 +160,7 @@ bool commandToStruct(char *com){
 }
 
 
+
 /**
 *   printStruct(uint16_t index);
 *
@@ -172,13 +168,14 @@ bool commandToStruct(char *com){
 *
 *   @params     : index number of structure in structure array
 */
-
 void printStruct(uint16_t index){
 
     printf("\n-------------------------------------------------\n");
     printf("index: %hu\nslave ID: %hu\nregister Address: %u\nfunction code: %hhu\ndata type: %s\ntype order: %s\nalias name: %s\nresult: %s\npoll intervell: %hu\n",modbus[index].index,modbus[index].slave_id,modbus[index].register_address,modbus[index].function_code,modbus[index].data_type,modbus[index].type_order,modbus[index].Alias_Name,modbus[index].result,modbus[index].poll_interval);
     printf("-------------------------------------------------\n");
 }
+
+
 /**
 *
 *   checkInteger(char *val,uint32_t range);
@@ -195,24 +192,26 @@ void printStruct(uint16_t index){
 *
 */
 bool checkInteger(char *val,uint32_t range){
-    char value[15];
-    memset(value,0,15);
+    char value[12];
+    bool TEN=false;
+    memset(value,0,12);
     strcpy(value,val);
     uint32_t i=0;
-    for(i=0;i<10;i++){
+    for(i=0;i<11;i++){
         if(value[i]==0)break;
         if((value[i]<48)||(value[i]>57)){
 
             return false;
         }
     }
-
+    if(i==10)TEN=true;
     i=0;
     sscanf(value,"%u",&i);
-    if(i>range) return false;
+    if(i>range||(TEN==true)&&(i<=0x2A05F1FF)) return false;
     return true;
 
 }
+
 
 /**
 *
